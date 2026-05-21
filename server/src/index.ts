@@ -1,13 +1,30 @@
 #!/usr/bin/env node
-
+import dotenv from "dotenv";
 import cors from "cors";
 import { parseArgs } from "node:util";
 import { parse as shellParseArgs } from "shell-quote";
 import nodeFetch, { Headers as NodeHeaders } from "node-fetch";
 
+import { resolve as resolvePath } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Adjust the path if your .env is at the repo root (C:\dev\mcp-inspector.env)
+dotenv.config({
+  path: resolvePath(__dirname, "..", "..", ".env"),
+});
+
 // Type-compatible wrappers for node-fetch to work with browser-style types
 const fetch = nodeFetch;
 const Headers = NodeHeaders;
+
+// Cloudflare Access header config:
+//  - CF_ACCESS_TOKEN: the token value
+//  - CF_ACCESS_HEADER_NAME: header name, defaults to "cf-access-token"
+const CF_ACCESS_TOKEN = process.env.CF_ACCESS_TOKEN; //|| "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6IjZiOTA0ZTA1ZmU5MjEwZWU2MTRiYzdkMjNmNWFmNjNkZWY5YWI0ZTU2MGRiZTQ4MjU5N2IwODc0NjM4Nzg5ODUifQ.eyJ0eXBlIjoiYXBwIiwiaWF0IjoxNzc5MzY2MzYwLCJleHAiOjE3Nzk0NTI3NjEsImlzcyI6Imh0dHBzOi8vZXJpY3Nzb24uY2xvdWRmbGFyZWFjY2Vzcy5jb20iLCJzdWIiOiIiLCJhdWQiOiI5NDNiZTAwZjYxOThkZTY3Nzg2ZWM5ZTU1MDdiMGNmZGUxNzIxMjljMmYxMTU4Yzk4ZjFlY2EwODg4NzY0YzE4IiwiY29tbW9uX25hbWUiOiJmODkzOWNlOWQ3Y2RiZGE5YzIzYjFlNTkyOGU4MzlhMy5hY2Nlc3MifQ.Hn0GMFyw97kgBudZrDvpgpnsYmWgoEHgEePh4e8t8p8xZwBBxjd9ZlHtiWThjlI1594vaDU63ZQdl3Hx8EqKvFdQQDnv3Q0moP5BHAyomBCA3xsJ6oNrUnanPlW5v9V66Un0mQ_ZnQQXJcjhLGKs44mlnJzQI_wE6KNXfn4U6D7boakcwdO0JKddGh5O2jkaHk0Om301VcUYZ8btL7uBLMo0D2624YwkMn15n3-8A3UKe3ifQ1ZQ6hlre0E6M46ZDi8Jk4YeZFWHMCy8lQWLRyUmD0SCXS6HzWAyAMtZpd-E1ZmCPfWr3gIN_u2dfr5yUt0dEn04KmLlBBXazjAkDw"
+const CF_ACCESS_HEADER_NAME =
+  process.env.CF_ACCESS_HEADER_NAME || "cf-access-token";
 
 import {
   SSEClientTransport,
@@ -360,6 +377,11 @@ const createCustomFetch = (headerHolder: ProxyHeaderHolder) => {
     new Headers(originalHeaders).forEach((value, key) => {
       finalHeaders.set(key, value);
     });
+
+    // Inject Cloudflare Access header if configured
+    if (CF_ACCESS_TOKEN) {
+      finalHeaders.set(CF_ACCESS_HEADER_NAME, CF_ACCESS_TOKEN);
+    }
 
     // Convert Headers to a plain object for node-fetch compatibility
     const headersObject: Record<string, string> = {};
@@ -888,9 +910,18 @@ app.post(
         return;
       }
 
+      const headersInit: Record<string, string> = {
+        ...(init?.headers as Record<string, string>),
+      };
+
+      // Inject Cloudflare Access header here as well (used by /fetch helper)
+      if (CF_ACCESS_TOKEN) {
+        headersInit[CF_ACCESS_HEADER_NAME] = CF_ACCESS_TOKEN;
+      }
+
       const response = await fetch(url, {
         method: init?.method ?? "GET",
-        headers: (init?.headers as Record<string, string>) ?? {},
+        headers: headersInit,
         body: init?.body as string | undefined,
       });
 
