@@ -7,6 +7,8 @@ import nodeFetch, { Headers as NodeHeaders } from "node-fetch";
 
 import { resolve as resolvePath } from "path";
 
+import fs from "node:fs";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -14,6 +16,17 @@ const __dirname = dirname(__filename);
 dotenv.config({
   path: resolvePath(__dirname, "..", "..", ".env"),
 });
+
+const HTTP_DEBUG = process.env.MCP_HTTP_DEBUG === "1";
+const HTTP_LOG_FILE = process.env.MCP_HTTP_LOG_FILE;
+
+function logHttp(line: string) {
+  const msg = `[HTTP] ${line}`;
+  console.log(msg);
+  if (HTTP_LOG_FILE) {
+    fs.appendFile(HTTP_LOG_FILE, msg + "\n", () => {});
+  }
+}
 
 // Type-compatible wrappers for node-fetch to work with browser-style types
 const fetch = nodeFetch;
@@ -389,6 +402,13 @@ const createCustomFetch = (headerHolder: ProxyHeaderHolder) => {
       headersObject[key] = value;
     });
 
+    if (HTTP_DEBUG) {
+      const method = init?.method ?? "GET";
+      logHttp(
+        `REQUEST ${method} ${String(input)} headers=${JSON.stringify(headersObject)}`,
+      );
+    }
+
     // Get the response from node-fetch (cast input and init to handle type differences)
     const response = await fetch(
       input as any,
@@ -415,6 +435,18 @@ const createCustomFetch = (headerHolder: ProxyHeaderHolder) => {
         statusText: response.statusText,
         headers: responseHeaders,
       }) as Response;
+    }
+
+    if (HTTP_DEBUG) {
+      const respHeaders: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        respHeaders[key] = value;
+      });
+      logHttp(
+        `RESPONSE ${response.status} ${response.statusText} ${response.url} headers=${JSON.stringify(
+          respHeaders,
+        )}`,
+      );
     }
 
     // Check if this is an SSE request by looking at the Accept header
@@ -910,6 +942,26 @@ app.post(
         return;
       }
 
+      // Rewrite /.well-known/openid-configuration → /auth/realms/cmem/.well-known/openid-configuration
+      if (parsedUrl.pathname.endsWith("/.well-known/openid-configuration")) {
+        parsedUrl.pathname = parsedUrl.pathname.replace(
+          "/.well-known/openid-configuration",
+          "/auth/realms/cmem/.well-known/openid-configuration",
+        );
+      }
+
+      // Rewrite /.well-known/oauth-authorization-server → /auth/realms/cmem/.well-known/oauth-authorization-server
+      if (
+        parsedUrl.pathname.endsWith("/.well-known/oauth-authorization-server")
+      ) {
+        parsedUrl.pathname = parsedUrl.pathname.replace(
+          "/.well-known/oauth-authorization-server",
+          "/auth/realms/cmem/.well-known/oauth-authorization-server",
+        );
+      }
+
+      const rewrittenUrl = parsedUrl.toString();
+
       const headersInit: Record<string, string> = {
         ...(init?.headers as Record<string, string>),
       };
@@ -919,13 +971,32 @@ app.post(
         headersInit[CF_ACCESS_HEADER_NAME] = CF_ACCESS_TOKEN;
       }
 
-      const response = await fetch(url, {
+      const response = await fetch(rewrittenUrl, {
         method: init?.method ?? "GET",
         headers: headersInit,
         body: init?.body as string | undefined,
       });
 
-      const responseBody = await response.text();
+      if (HTTP_DEBUG) {
+        const respHeaders: Record<string, string> = {};
+        response.headers.forEach((value, key) => {
+          respHeaders[key] = value;
+        });
+        logHttp(
+          `FETCH RESPONSE ${response.status} ${response.statusText} ${rewrittenUrl} headers=${JSON.stringify(
+            respHeaders,
+          )}`,
+        );
+      }
+
+      const responseBodyRaw = await response.text();
+
+      // Rewrite plain HTTP URL to HTTPS in the body
+      const responseBody = responseBodyRaw.replace(
+        /http:\/\/supply-variant-generator\b/g,
+        "https://supply-variant-generator",
+      );
+
       const headers: Record<string, string> = {};
       response.headers.forEach((value, key) => {
         headers[key] = value;

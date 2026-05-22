@@ -107,7 +107,7 @@ export const getAuthorizationServerMetadataDiscoveryUrl = (
 
   if (!hasPath) {
     return new URL(
-      `${prefix}/.well-known/oauth-authorization-server`,
+      `${prefix}/auth/realms/cmem/.well-known/oauth-authorization-server`,
       url.origin,
     ).href;
   }
@@ -118,7 +118,7 @@ export const getAuthorizationServerMetadataDiscoveryUrl = (
     : url.pathname;
 
   return new URL(
-    `${prefix}${pathname}/.well-known/oauth-authorization-server`,
+    `${prefix}${pathname}/auth/realms/cmem/.well-known/oauth-authorization-server`,
     url.origin,
   ).href;
 };
