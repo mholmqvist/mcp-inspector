@@ -101,15 +101,12 @@ export const getAuthorizationServerMetadataDiscoveryUrl = (
       : authorizationServerUrl;
 
   // Optional prefix before /.well-known (e.g. "/cf-proxy" when going through Cloudflare)
-  const prefix = import.meta.env.VITE_MCP_WELL_KNOWN_PREFIX ?? "";
+  //const prefix = import.meta.env.VITE_MCP_WELL_KNOWN_PREFIX ?? "";
 
   const hasPath = url.pathname !== "/";
 
   if (!hasPath) {
-    return new URL(
-      `${prefix}/auth/realms/cmem/.well-known/oauth-authorization-server`,
-      url.origin,
-    ).href;
+    return new URL(`/.well-known/oauth-authorization-server`, url.origin).href;
   }
 
   // Strip trailing slash to avoid double slashes in tenant-aware discovery URLs.
@@ -118,7 +115,7 @@ export const getAuthorizationServerMetadataDiscoveryUrl = (
     : url.pathname;
 
   return new URL(
-    `${prefix}${pathname}/auth/realms/cmem/.well-known/oauth-authorization-server`,
+    `${pathname}/.well-known/oauth-authorization-server`,
     url.origin,
   ).href;
 };
@@ -132,12 +129,11 @@ export const getResourceMetadataDiscoveryUrl = (
 ): string => {
   const url = typeof serverUrl === "string" ? new URL(serverUrl) : serverUrl;
 
-  const prefix = import.meta.env.VITE_MCP_WELL_KNOWN_PREFIX ?? "";
+  //const prefix = import.meta.env.VITE_MCP_WELL_KNOWN_PREFIX ?? "";
 
   const hasPath = url.pathname !== "/";
   if (!hasPath) {
-    return new URL(`${prefix}/.well-known/oauth-protected-resource`, url.origin)
-      .href;
+    return new URL(`/.well-known/oauth-protected-resource`, url.origin).href;
   }
 
   // Strip trailing slash so we don't end up with double slashes.
@@ -147,8 +143,6 @@ export const getResourceMetadataDiscoveryUrl = (
 
   // Path-aware variant per RFC 9728:
   //   {origin}{prefix}/.well-known/oauth-protected-resource{pathname}
-  return new URL(
-    `${prefix}${pathname}/.well-known/oauth-protected-resource`,
-    url.origin,
-  ).href;
+  return new URL(`${pathname}/.well-known/oauth-protected-resource`, url.origin)
+    .href;
 };

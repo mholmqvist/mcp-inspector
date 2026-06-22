@@ -35,7 +35,7 @@ const Headers = NodeHeaders;
 // Cloudflare Access header config:
 //  - CF_ACCESS_TOKEN: the token value
 //  - CF_ACCESS_HEADER_NAME: header name, defaults to "cf-access-token"
-const CF_ACCESS_TOKEN = process.env.CF_ACCESS_TOKEN; //|| "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6IjZiOTA0ZTA1ZmU5MjEwZWU2MTRiYzdkMjNmNWFmNjNkZWY5YWI0ZTU2MGRiZTQ4MjU5N2IwODc0NjM4Nzg5ODUifQ.eyJ0eXBlIjoiYXBwIiwiaWF0IjoxNzc5MzY2MzYwLCJleHAiOjE3Nzk0NTI3NjEsImlzcyI6Imh0dHBzOi8vZXJpY3Nzb24uY2xvdWRmbGFyZWFjY2Vzcy5jb20iLCJzdWIiOiIiLCJhdWQiOiI5NDNiZTAwZjYxOThkZTY3Nzg2ZWM5ZTU1MDdiMGNmZGUxNzIxMjljMmYxMTU4Yzk4ZjFlY2EwODg4NzY0YzE4IiwiY29tbW9uX25hbWUiOiJmODkzOWNlOWQ3Y2RiZGE5YzIzYjFlNTkyOGU4MzlhMy5hY2Nlc3MifQ.Hn0GMFyw97kgBudZrDvpgpnsYmWgoEHgEePh4e8t8p8xZwBBxjd9ZlHtiWThjlI1594vaDU63ZQdl3Hx8EqKvFdQQDnv3Q0moP5BHAyomBCA3xsJ6oNrUnanPlW5v9V66Un0mQ_ZnQQXJcjhLGKs44mlnJzQI_wE6KNXfn4U6D7boakcwdO0JKddGh5O2jkaHk0Om301VcUYZ8btL7uBLMo0D2624YwkMn15n3-8A3UKe3ifQ1ZQ6hlre0E6M46ZDi8Jk4YeZFWHMCy8lQWLRyUmD0SCXS6HzWAyAMtZpd-E1ZmCPfWr3gIN_u2dfr5yUt0dEn04KmLlBBXazjAkDw"
+const CF_ACCESS_TOKEN = process.env.CF_ACCESS_TOKEN;
 const CF_ACCESS_HEADER_NAME =
   process.env.CF_ACCESS_HEADER_NAME || "cf-access-token";
 
@@ -943,22 +943,22 @@ app.post(
       }
 
       // Rewrite /.well-known/openid-configuration → /auth/realms/cmem/.well-known/openid-configuration
-      if (parsedUrl.pathname.endsWith("/.well-known/openid-configuration")) {
-        parsedUrl.pathname = parsedUrl.pathname.replace(
-          "/.well-known/openid-configuration",
-          "/auth/realms/cmem/.well-known/openid-configuration",
-        );
-      }
+      //      if (parsedUrl.pathname.endsWith("/.well-known/openid-configuration")) {
+      //        parsedUrl.pathname = parsedUrl.pathname.replace(
+      //          "/.well-known/openid-configuration",
+      //          "/auth/realms/cmem/.well-known/openid-configuration",
+      //        );
+      //      }
 
-      // Rewrite /.well-known/oauth-authorization-server → /auth/realms/cmem/.well-known/oauth-authorization-server
-      if (
-        parsedUrl.pathname.endsWith("/.well-known/oauth-authorization-server")
-      ) {
-        parsedUrl.pathname = parsedUrl.pathname.replace(
-          "/.well-known/oauth-authorization-server",
-          "/auth/realms/cmem/.well-known/oauth-authorization-server",
-        );
-      }
+      //      // Rewrite /.well-known/oauth-authorization-server → /auth/realms/cmem/.well-known/oauth-authorization-server
+      //      if (
+      //        parsedUrl.pathname.endsWith("/.well-known/oauth-authorization-server")
+      //      ) {
+      //        parsedUrl.pathname = parsedUrl.pathname.replace(
+      //          "/.well-known/oauth-authorization-server",
+      //          "/auth/realms/cmem/.well-known/oauth-authorization-server",
+      //        );
+      //      }
 
       const rewrittenUrl = parsedUrl.toString();
 
@@ -989,13 +989,13 @@ app.post(
         );
       }
 
-      const responseBodyRaw = await response.text();
+      const responseBody = await response.text();
 
       // Rewrite plain HTTP URL to HTTPS in the body
-      const responseBody = responseBodyRaw.replace(
-        /http:\/\/supply-variant-generator\b/g,
-        "https://supply-variant-generator",
-      );
+      //const responseBody = responseBodyRaw.replace(
+      //  /http:\/\/supply-variant-generator\b/g,
+      //  "https://supply-variant-generator",
+      //);
 
       const headers: Record<string, string> = {};
       response.headers.forEach((value, key) => {
